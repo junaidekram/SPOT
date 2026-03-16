@@ -2,48 +2,54 @@ const spinner = document.querySelector("#landing .spinner-container");
 
 const clientId =
   "800684505201-pfg5ddut06emg4l4ch4b8u0jco05vluh.apps.googleusercontent.com";
-let auth2;
 let currentUser;
 
-gapi.load("auth2", () => {
-  auth2 = gapi.auth2.init({
+if (typeof google !== "undefined" && google.accounts) {
+  google.accounts.id.initialize({
     client_id: clientId,
+    callback: handleCredentialResponse,
+    auto_select: false,
+    cancel_on_tap_outside: false,
   });
 
-  auth2
-    .then(() => {
-      if (!auth2.isSignedIn.get()) {
-        auth2.attachClickHandler(
-          document.querySelector(".auth-buttons .google"),
-          {},
-        );
-        spinner.classList.remove("visible");
-      }
-    })
-    .catch(() => {
-      document
-        .querySelector(".auth-buttons .google")
-        .classList.remove("active");
+  google.accounts.id.prompt((notification) => {
+    if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
       spinner.classList.remove("visible");
+    }
+  });
+
+  document
+    .querySelector(".auth-buttons .google")
+    .addEventListener("click", () => {
+      google.accounts.id.prompt();
     });
+} else {
+  document
+    .querySelector(".auth-buttons .google")
+    .classList.remove("active");
+  spinner.classList.remove("visible");
+}
 
-  setTimeout(() => {
-    document.querySelector(".auth-buttons .google").classList.remove("active");
+setTimeout(() => {
+  document.querySelector(".auth-buttons .google").classList.remove("active");
+  spinner.classList.remove("visible");
+}, 5000);
+
+async function handleCredentialResponse(response) {
+  const verification = await verify(response.credential);
+  console.log(verification);
+  if (verification.status) {
+    currentUser = verification.user;
+    //TODO: update ScoutingSync.scouterId
+    switchPage("waiting");
     spinner.classList.remove("visible");
-  }, 5000);
-
-  auth2.isSignedIn.listen(signinChanged);
-  auth2.currentUser.listen(userChanged);
-});
-
-function signinChanged(val) {
-  if (!val) {
-    signOut();
   }
 }
 
-async function signOut() {
-  await auth2.signOut();
+function signOut() {
+  if (typeof google !== "undefined" && google.accounts) {
+    google.accounts.id.disableAutoSelect();
+  }
   switchPage("landing");
   spinner.classList.remove("visible");
 }
@@ -74,25 +80,12 @@ async function isDemo() {
 }
 isDemo(); // Probably somewhere better to put this, but it works so I do not care to find it.
 
-async function userChanged(user) {
-  if (auth2.isSignedIn.get()) {
-    const verification = await verify(user);
-    console.log(verification);
-    if (verification.status) {
-      currentUser = verification.user;
-      //TODO: update ScoutingSync.scouterId
-      switchPage("waiting");
-      spinner.classList.remove("visible");
-    }
-  }
-}
-
-async function verify(user) {
+async function verify(idToken) {
   const res = await fetch("/auth/verify", {
     method: "GET",
     headers: {
       "Content-Type": "application/json",
-      token: user.getAuthResponse().id_token,
+      token: idToken,
     },
   }).then((res) => res.json());
   return res;
