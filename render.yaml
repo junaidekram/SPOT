@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: spot
+    env: node
+    buildCommand: npm install
+    startCommand: node src/app.js
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: TBA_API_KEY
+        sync: false
+      - key: EVENT_NUMBER
+        sync: false
+      - key: TBA_EVENT_KEY
+        sync: false
+      - key: ACCESS_CODE
+        sync: false
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: VERSION
+        value: 1.0.0

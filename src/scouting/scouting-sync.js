@@ -18,7 +18,9 @@ module.exports = (server) => {
         ),
       );
     } else {
-      ScoutingSync.initialize(server); //initialize the socketio stuff
+      ScoutingSync.initialize(server).catch((e) => { //initialize the socketio stuff
+        console.error(chalk.red("Failed to initialize ScoutingSync:"), e);
+      });
     }
   }
   return ScoutingSync;
@@ -96,6 +98,7 @@ class ScoutingSync {
         headers: {
           "X-TBA-Auth-Key": config.secrets.TBA_API_KEY,
         },
+        timeout: 10000,
       })
       .catch((e) =>
         console.log(
@@ -120,6 +123,7 @@ class ScoutingSync {
               username: config.secrets.FMS_API_USERNAME,
               password: config.secrets.FMS_API_KEY,
             },
+            timeout: 10000,
           })
           .catch((e) =>
             console.log(
